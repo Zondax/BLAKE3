@@ -181,7 +181,8 @@ INLINE size_t compress_chunks_parallel(const uint8_t *input, size_t input_len,
   const uint8_t *chunks_array[MAX_SIMD_DEGREE];
   size_t input_position = 0;
   size_t chunks_array_len = 0;
-  while (input_len - input_position >= BLAKE3_CHUNK_LEN) {
+  while (input_len - input_position >= BLAKE3_CHUNK_LEN &&
+         chunks_array_len < MAX_SIMD_DEGREE) {
     chunks_array[chunks_array_len] = &input[input_position];
     input_position += BLAKE3_CHUNK_LEN;
     chunks_array_len += 1;
@@ -430,7 +431,7 @@ void blake3_hasher_init_derive_key(blake3_hasher *self, const char *context) {
 // represented by a 1-bit in the total number of chunks (or bytes) so far.
 INLINE void hasher_merge_cv_stack(blake3_hasher *self, uint64_t total_len) {
   size_t post_merge_stack_len = (size_t)popcnt(total_len);
-  while (self->cv_stack_len > post_merge_stack_len) {
+  while (self->cv_stack_len > post_merge_stack_len && self->cv_stack_len >= 2) {
     uint8_t *parent_node =
         &self->cv_stack[(self->cv_stack_len - 2) * BLAKE3_OUT_LEN];
     output_t output = parent_output(parent_node, self->key, self->chunk.flags);
